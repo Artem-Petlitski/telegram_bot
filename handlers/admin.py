@@ -17,6 +17,7 @@ class FSMAdmin(StatesGroup):
     name = State()
     description = State()
     price = State()
+    category = State
 
 
 # Id администратора
@@ -66,12 +67,22 @@ async def load_description(message: types.Message, state=FSMContext):
         await message.reply("Введите цену ")
 
 
-# последний ответ
+#четвертый ответ
 # @dp.message_handler(state=FSMAdmin.price)
 async def load_price(message: types.Message, state=FSMContext):
     if message.from_user.id == ID:
         async with state.proxy() as data:
             data['price'] = float(message.text)
+        await FSMAdmin.next()
+        await message.reply("Введите категорию ")
+
+
+# последний ответ
+# @dp.message_handler(state=FSMAdmin.category)
+async def load_category(message: types.Message, state=FSMContext):
+    if message.from_user.id == ID:
+        async with state.proxy() as data:
+            data['category'] = message.text
         await sqlite_db.sql_add_command(state)
         await state.finish()
 
@@ -109,9 +120,8 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(load_name, state=FSMAdmin.name)
     dp.register_message_handler(load_description, state=FSMAdmin.description)
     dp.register_message_handler(load_price, state=FSMAdmin.price)
+    dp.register_message_handler(load_category, state=FSMAdmin.category)
     dp.register_message_handler(cancel_handler, state="*", commands="Отмена")
     dp.register_message_handler(cancel_handler, Text(equals="Отмена", ignore_case=True), state="*")
     dp.register_message_handler(make_changes_command, commands=['admin'], is_chat_admin=True)
     dp.register_message_handler(delete_item, commands=['Удалить'])
-
-

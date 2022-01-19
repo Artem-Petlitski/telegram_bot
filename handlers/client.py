@@ -5,7 +5,8 @@ from keyboards import kb_client, kb_place
 from aiogram.types import ReplyKeyboardRemove
 from database import sqlite_db
 from aiogram.types import *
-from database import set_data, check, del_cart
+from database import set_data, check, del_cart, set_order
+
 YOOTOKEN = '381764678:TEST:32487'
 
 
@@ -46,17 +47,17 @@ async def location(message: types.Message):
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 
-@dp.message_handler(commands=["Доставка"])
+@dp.message_handler(text="Доставка")
 async def dostavka(message: types.Message):
     try:
-        await bot.send_message(message.from_user.id, "Пицца будет доставлена через ~~  25 минут",request_location=True,
+        await bot.send_message(message.from_user.id, "Пицца будет доставлена через ~~  25 минут", request_location=True,
                                reply_markup=ReplyKeyboardRemove())
         await message.delete()
     except:
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 
-@dp.message_handler(commands=["В пиццерии"])
+@dp.message_handler(text="В пиццерии")
 async def v_piccerii(message: types.Message):
     try:
         await bot.send_message(message.from_user.id, "При получении пиццы предъявите ваш чек",
@@ -82,7 +83,7 @@ async def buy_tovar(call: types.CallbackQuery):
         'product': item[1],
         'price': int(float(item[-1])),
     }
-
+    await bot.answer_callback_query(call.id, text="Товар добавлен в корзину")
     await set_data(data)
     # await bot.send_invoice(chat_id=call.from_user.id, title=f"Покупка пиццы {item[1]}",
     #                        description=f"{item[2]}", payload="Monthsub", provider_token=YOOTOKEN,
@@ -97,17 +98,20 @@ async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery)
 
 @dp.message_handler(content_types=ContentTypes.SUCCESSFUL_PAYMENT)
 async def process_pay(message: types.Message):
-    await del_cart(message.from_user.id)
     if message.successful_payment.invoice_payload == 'Monthsub':
-        await message.answer("Вы успешно оплатили заказ", reply_markup=kb_place)
+        await message.answer("Вы успешно оплатили заказ")
+
+        data = message.from_user
+        print(data)
+        await set_order(data)
+        await del_cart(message.from_user.id)
 
 
-
-
-@dp.message_handler(text ="Оплатить")
+@dp.message_handler(text="Оплатить")
 async def patmetn(message: types.Message):
     # await sqlite_db.sql_read(message)
     await check(message.from_user.id)
+
 
 @dp.message_handler(text="Удалить заказ")
 async def del_order(message: types.Message):

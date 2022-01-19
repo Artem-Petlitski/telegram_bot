@@ -94,6 +94,26 @@ async def del_cart(user_id: int) -> None:
         ''', (user_id,))
     conn.commit()
 
+
+async def set_order(place: dict) -> None:
+    conn = sq.connect('pizza_cool.db')
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT product
+        FROM cart
+        WHERE id = ?
+    ''', (place['id'],))
+    result = cur.fetchone()
+    if result:
+        product = result
+        print(product)
+        cur.execute('''
+            INSERT INTO orders(first_name,last_name,user_id, product,adress,is_done )
+            VALUES(?, ?, ?,?,?,?)
+        ''', (place['first_name'], place['last_name'], place['id'], str(product), 'ads', False))
+    conn.commit()
+
+
 # conn = sqlite3.connect('../../db.db')
 # cur = conn.cursor()
 # cur.execute('''
@@ -101,5 +121,19 @@ async def del_cart(user_id: int) -> None:
 #         id INTEGER UNIQUE NOT NULL,
 #         product TEXT NOT NULL,
 #         price INTEGER NOT NULL)
+# ''')
+# conn.commit()
+
+# conn = sq.connect('../pizza_cool.db')
+# cur = conn.cursor()
+# cur.execute('''
+#     CREATE TABLE IF NOT EXISTS orders(
+#         id INTEGER PRIMARY KEY,
+#         first_name TEXT NOT NULL,
+#         last_name TEXT NOT NULL,
+#         user_id INTEGER,
+#         product TEXT NOT NULL,
+#         adress TEXT NOT NULL,
+#         is_done BOOL)
 # ''')
 # conn.commit()
