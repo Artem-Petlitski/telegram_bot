@@ -9,31 +9,35 @@ async def sql_start():
     cur = base.cursor()
     if base:
         print("Database connected")
-    base.execute("CREATE TABLE IF NOT EXISTS menu(img TEXT,name TEXT PRIMARY KEY,description TEXT,price INTEGER )")
+    base.execute("CREATE TABLE IF NOT EXISTS Menu(img TEXT,name TEXT PRIMARY KEY,description TEXT,price INTEGER,category TEXT)")
     base.commit()
 
 
 async def sql_add_command(state):
     async with state.proxy() as data:
-        cur.execute('INSERT INTO menu VALUES(?,?,?,?)', tuple(data.values()))
+        cur.execute('INSERT INTO Menu VALUES(?,?,?,?,?)', tuple(data.values()))
         base.commit()
 
 
 async def sql_read(message):
-    for ret in cur.execute('SELECT * from menu').fetchall():
+    for ret in cur.execute('SELECT * from Menu').fetchall():
         await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена {ret[-1]}')
 
 
-async def sql_read2():
-    return cur.execute('SELECT * FROM menu').fetchall()
+
+async def sql_category():
+    return cur.execute('SELECT * FROM Menu').fetchall()
+
+async def sql_read2(category):
+    return cur.execute('SELECT * FROM menu WHERE category == ?',(category,)).fetchall()
 
 
 async def sql_read3(data):
-    return cur.execute('SELECT * FROM menu WHERE name == ?', (data,)).fetchall()[0]
+    return cur.execute('SELECT * FROM Menu WHERE name == ?', (data,)).fetchall()[0]
 
 
 async def sql_delete_command(data):
-    cur.execute('DELETE FROM menu WHERE name == ?', (data,))
+    cur.execute('DELETE FROM Menu WHERE name == ?', (data,))
     base.commit()
 
 
@@ -108,10 +112,24 @@ async def set_order(place: dict) -> None:
         product = result
         print(product)
         cur.execute('''
-            INSERT INTO orders(first_name,last_name,user_id, product,adress,is_done )
+            INSERT INTO orders(first_name,last_name,user_id, product,adress,is_done)
             VALUES(?, ?, ?,?,?,?)
         ''', (place['first_name'], place['last_name'], place['id'], str(product), 'ads', False))
     conn.commit()
+
+async def sql_done_order(state):
+    conn = sq.connect('pizza_cool.db')
+    cur = conn.cursor()
+    async with state.proxy() as data:
+        print(data['number_order'])
+        cur.execute('''
+                UPDATE orders
+                SET is_done =  TRUE
+                WHERE id = ?
+            ''', (data['number_order']))
+    conn.commit()
+
+
 
 
 # conn = sqlite3.connect('../../db.db')

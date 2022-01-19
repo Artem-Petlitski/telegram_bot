@@ -17,7 +17,12 @@ class FSMAdmin(StatesGroup):
     name = State()
     description = State()
     price = State()
-    category = State
+    category = State()
+
+class FSMOrder(StatesGroup):
+    number_order = State()
+
+
 
 
 # Id администратора
@@ -98,7 +103,7 @@ async def delete_item(message: types.Message):
     if message.from_user.id == ID:
         read = await sqlite_db.sql_read2()
         for ret in read:
-            await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена{ret[-1]}')
+            await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена{ret[-2]}')
             await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup().add(
                 InlineKeyboardButton(f'Удалить {ret[1]}', callback_data=f'del {ret[1]}')))
 
@@ -113,6 +118,23 @@ async def cancel_handler(message: types.Message, state: FSMContext):
     await state.finish()
     await message.reply("Ок")
 
+@dp.message_handler(text='Готовый заказ')
+async def order_start(message: types.Message):
+    if message.from_user.id == ID:
+        await FSMOrder.number_order.set()
+        await message.reply('Введите номер выполненного заказа')
+
+@dp.message_handler(content_types=['number_order'], state=FSMOrder.number_order)
+async def done_order(message: types.Message, state=FSMContext):
+    if message.from_user.id == ID:
+        async with state.proxy() as data:
+            data['number_order'] = message.text
+        await sqlite_db.sql_done_order(state)
+        await state.finish()
+
+
+
+
 
 def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(cm_start, commands=['Загрузить'], state=None)
@@ -125,3 +147,5 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(cancel_handler, Text(equals="Отмена", ignore_case=True), state="*")
     dp.register_message_handler(make_changes_command, commands=['admin'], is_chat_admin=True)
     dp.register_message_handler(delete_item, commands=['Удалить'])
+    dp.register_message_handler(done_order, state=FSMOrder.number_order)
+

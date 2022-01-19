@@ -2,7 +2,7 @@
 from aiogram import types, Dispatcher
 from create_bot import dp, bot
 from keyboards import kb_client, kb_place
-from aiogram.types import ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardRemove,KeyboardButton,ReplyKeyboardMarkup
 from database import sqlite_db
 from aiogram.types import *
 from database import set_data, check, del_cart, set_order
@@ -19,6 +19,13 @@ async def command_start(message: types.Message):
     except:
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
+@dp.message_handler(text = 'Главное меню')
+async def command_start(message: types.Message):
+    try:
+        await bot.send_message(message.from_user.id, 'Режимы работы', reply_markup=kb_client)
+        await message.delete()
+    except:
+        await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 # @dp.message_handler(commands=[ 'help', ])
 async def command_help(message: types.Message):
@@ -66,11 +73,35 @@ async def v_piccerii(message: types.Message):
     except:
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
-
-async def buy_item(message: types.Message):
-    read = await sqlite_db.sql_read2()
+async def category(message: types.Message):
+    read = await sqlite_db.sql_category()
+    kb_category = ReplyKeyboardMarkup(resize_keyboard=True)
+    count = 0
     for ret in read:
-        await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена{ret[-1]}')
+        if count == 0:
+            kb_category.add(KeyboardButton(f"{ret[-1]}"))
+            count +=1
+        else:
+            count = 0
+            kb_category.insert(KeyboardButton(f"{ret[-1]}"))
+    kb_category.add(KeyboardButton("Главное меню"))
+    await bot.send_message(message.from_user.id, 'Категории:', reply_markup=kb_category)
+
+
+
+@dp.message_handler(text="Пиццы")
+async def buy_item(message: types.Message):
+    read = await sqlite_db.sql_read2(message.text)
+    for ret in read:
+        await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена{ret[-2]}')
+        await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup().add(
+            InlineKeyboardButton(f'Добавить {ret[1]}', callback_data=f'buy {ret[1]}')))
+
+@dp.message_handler(text="Пиво")
+async def buy_item(message: types.Message):
+    read = await sqlite_db.sql_read2(message.text)
+    for ret in read:
+        await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена{ret[-2]}')
         await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup().add(
             InlineKeyboardButton(f'Добавить {ret[1]}', callback_data=f'buy {ret[1]}')))
 
@@ -81,7 +112,7 @@ async def buy_tovar(call: types.CallbackQuery):
     data = {
         'id': call.from_user.id,
         'product': item[1],
-        'price': int(float(item[-1])),
+        'price': int(float(item[-2])),
     }
     await bot.answer_callback_query(call.id, text="Товар добавлен в корзину")
     await set_data(data)
@@ -124,6 +155,6 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(command_help, commands=['help'])
     dp.register_message_handler(time_of_work, commands=["Режим_работы"])
     dp.register_message_handler(location, commands=['Расположение'])
-    dp.register_message_handler(buy_item, commands=['Меню'])
+    dp.register_message_handler(category, commands=['Меню'])
     dp.register_message_handler(dostavka, commands=["Доставка"])
     dp.register_message_handler(v_piccerii, commands=["В_пиццерии"])
