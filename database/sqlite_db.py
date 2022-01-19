@@ -99,23 +99,25 @@ async def del_cart(user_id: int) -> None:
     conn.commit()
 
 
-async def set_order(place: dict) -> None:
+async def set_order(place: dict,state) -> None:
     conn = sq.connect('pizza_cool.db')
     cur = conn.cursor()
-    cur.execute('''
-        SELECT product
-        FROM cart
-        WHERE id = ?
-    ''', (place['id'],))
-    result = cur.fetchone()
-    if result:
-        product = result
-        print(product)
+    async with state.proxy() as data:
         cur.execute('''
-            INSERT INTO orders(first_name,last_name,user_id, product,adress,is_done)
-            VALUES(?, ?, ?,?,?,?)
-        ''', (place['first_name'], place['last_name'], place['id'], str(product), 'ads', False))
-    conn.commit()
+            SELECT product
+            FROM cart
+            WHERE id = ?
+        ''', (place['id'],))
+        result = cur.fetchone()
+        if result:
+            product = result
+            print(product)
+            # print(data['adress'])
+            cur.execute('''
+                INSERT INTO orders(first_name,last_name,user_id, product,adress,is_done)
+                VALUES(?, ?, ?,?,?,?)
+            ''', (place['first_name'], place['last_name'], place['id'], str(product), data['adress'], False))
+        conn.commit()
 
 async def sql_done_order(state):
     conn = sq.connect('pizza_cool.db')

@@ -1,6 +1,8 @@
 ############Клиентская часть#######################
 from aiogram import types, Dispatcher
 from create_bot import dp, bot
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
 from keyboards import kb_client, kb_place
 from aiogram.types import ReplyKeyboardRemove,KeyboardButton,ReplyKeyboardMarkup
 from database import sqlite_db
@@ -9,6 +11,8 @@ from database import set_data, check, del_cart, set_order
 
 YOOTOKEN = '381764678:TEST:32487'
 
+class FSMAdress(StatesGroup):
+    adress = State()
 
 # @dp.message_handler(commands=['start'])
 
@@ -131,12 +135,20 @@ async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery)
 async def process_pay(message: types.Message):
     if message.successful_payment.invoice_payload == 'Monthsub':
         await message.answer("Вы успешно оплатили заказ")
+        await FSMAdress.adress.set()
+        await message.reply('Введите адрес доставки')
 
-        data = message.from_user
-        print(data)
-        await set_order(data)
+
+
+@dp.message_handler(content_types=['adress'], state=FSMAdress.adress)
+async def adress(message: types.Message, state=FSMContext):
+        async with state.proxy() as data:
+            data['adress'] = message.text
+        information = message.from_user
+        print(information)
+        await set_order(information, state)
         await del_cart(message.from_user.id)
-
+        await state.finish()
 
 @dp.message_handler(text="Оплатить")
 async def patmetn(message: types.Message):
@@ -158,3 +170,4 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(category, commands=['Меню'])
     dp.register_message_handler(dostavka, commands=["Доставка"])
     dp.register_message_handler(v_piccerii, commands=["В_пиццерии"])
+    dp.register_message_handler(adress, state=FSMAdress.adress)
