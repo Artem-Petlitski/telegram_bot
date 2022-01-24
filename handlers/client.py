@@ -4,15 +4,18 @@ from create_bot import dp, bot
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from keyboards import kb_client, kb_place
-from aiogram.types import ReplyKeyboardRemove,KeyboardButton,ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
 from database import sqlite_db
 from aiogram.types import *
 from database import set_data, check, del_cart, set_order
+from aiogram.utils.markdown import hlink
 
 YOOTOKEN = '381764678:TEST:32487'
 
+
 class FSMAdress(StatesGroup):
     adress = State()
+
 
 # @dp.message_handler(commands=['start'])
 
@@ -23,13 +26,15 @@ async def command_start(message: types.Message):
     except:
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
-@dp.message_handler(text = 'Главное меню')
+
+@dp.message_handler(text='Главное меню')
 async def command_start(message: types.Message):
     try:
         await bot.send_message(message.from_user.id, 'Режимы работы', reply_markup=kb_client)
         await message.delete()
     except:
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
+
 
 # @dp.message_handler(commands=[ 'help', ])
 async def command_help(message: types.Message):
@@ -68,6 +73,21 @@ async def dostavka(message: types.Message):
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 
+@dp.message_handler(text="Поддержка")
+async def help(message: types.Message):
+    try:
+        buttons = [
+            types.InlineKeyboardButton(text="Vk", url="https://vk.com/pppet9"),
+            types.InlineKeyboardButton(text="Instagram", url="https://www.instagram.com/20_prosto_temka_01/")
+        ]
+        keyboard = types.InlineKeyboardMarkup(row_width=1)
+        keyboard.add(*buttons)
+        await message.answer("Контакты разработчиков", reply_markup=keyboard)
+        await message.delete()
+    except:
+        await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
+
+
 @dp.message_handler(text="В пиццерии")
 async def v_piccerii(message: types.Message):
     try:
@@ -77,20 +97,25 @@ async def v_piccerii(message: types.Message):
     except:
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
+
 async def category(message: types.Message):
-    read = await sqlite_db.sql_category()
+    read = set(await sqlite_db.sql_category())
     kb_category = ReplyKeyboardMarkup(resize_keyboard=True)
     count = 0
+    tovar = []
     for ret in read:
-        if count == 0:
-            kb_category.add(KeyboardButton(f"{ret[-1]}"))
-            count +=1
-        else:
-            count = 0
-            kb_category.insert(KeyboardButton(f"{ret[-1]}"))
+        if ret[-1] not in tovar:
+            if count == 0:
+                kb_category.add(KeyboardButton(f"{ret[-1]}"))
+                tovar.append(ret[-1])
+                count += 1
+            else:
+                count = 0
+                kb_category.insert(KeyboardButton(f"{ret[-1]}"))
+                tovar.append(ret[-1])
     kb_category.add(KeyboardButton("Главное меню"))
-    await bot.send_message(message.from_user.id, 'Категории:', reply_markup=kb_category)
-
+    await bot.send_message(message.from_user.id, '*Категории:*', reply_markup=kb_category,
+                           parse_mode=ParseMode.MARKDOWN)
 
 
 @dp.message_handler(text="Пиццы")
@@ -101,7 +126,8 @@ async def buy_item(message: types.Message):
         await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup().add(
             InlineKeyboardButton(f'Добавить {ret[1]}', callback_data=f'buy {ret[1]}')))
 
-@dp.message_handler(text="Пиво")
+
+@dp.message_handler(text="Напитки")
 async def buy_item(message: types.Message):
     read = await sqlite_db.sql_read2(message.text)
     for ret in read:
@@ -139,16 +165,16 @@ async def process_pay(message: types.Message):
         await message.reply('Введите адрес доставки')
 
 
-
 @dp.message_handler(content_types=['adress'], state=FSMAdress.adress)
 async def adress(message: types.Message, state=FSMContext):
-        async with state.proxy() as data:
-            data['adress'] = message.text
-        information = message.from_user
-        print(information)
-        await set_order(information, state)
-        await del_cart(message.from_user.id)
-        await state.finish()
+    async with state.proxy() as data:
+        data['adress'] = message.text
+    information = message.from_user
+    print(information)
+    await set_order(information, state)
+    await del_cart(message.from_user.id)
+    await state.finish()
+
 
 @dp.message_handler(text="Оплатить")
 async def patmetn(message: types.Message):
@@ -160,6 +186,8 @@ async def patmetn(message: types.Message):
 async def del_order(message: types.Message):
     await message.answer("Заказ успешно удален")
     await del_cart(message.from_user.id)
+
+
 
 
 def register_handlers_client(dp: Dispatcher):

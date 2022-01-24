@@ -114,9 +114,9 @@ async def set_order(place: dict,state) -> None:
             print(product)
             # print(data['adress'])
             cur.execute('''
-                INSERT INTO orders(first_name,last_name,user_id, product,adress,is_done)
-                VALUES(?, ?, ?,?,?,?)
-            ''', (place['first_name'], place['last_name'], place['id'], str(product), data['adress'], False))
+                INSERT INTO orders(first_name,user_id, product,adress,is_done)
+                VALUES(?,  ?,?,?,?)
+            ''', (place['first_name'], place['id'], str(product), data['adress'], False))
         conn.commit()
 
 async def sql_done_order(state):
@@ -150,7 +150,6 @@ async def sql_done_order(state):
 #     CREATE TABLE IF NOT EXISTS orders(
 #         id INTEGER PRIMARY KEY,
 #         first_name TEXT NOT NULL,
-#         last_name TEXT NOT NULL,
 #         user_id INTEGER,
 #         product TEXT NOT NULL,
 #         adress TEXT NOT NULL,

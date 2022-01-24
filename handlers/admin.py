@@ -19,10 +19,9 @@ class FSMAdmin(StatesGroup):
     price = State()
     category = State()
 
+
 class FSMOrder(StatesGroup):
     number_order = State()
-
-
 
 
 # Id администратора
@@ -40,6 +39,17 @@ async def cm_start(message: types.Message):
     if message.from_user.id == ID:
         await FSMAdmin.photo.set()
         await message.reply("Загрузи фото")
+
+
+# Выход из состояний
+# @dp.message_handler(state="*", commands="Отмена")
+# @dp.message_handler(Text(equals="Отмена", ignore_case=True), state="*")
+async def cancel_handler(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state == None:
+        return
+    await state.finish()
+    await message.reply("Ок")
 
 
 # Ловим первый ответ и пишем в словарь
@@ -72,7 +82,7 @@ async def load_description(message: types.Message, state=FSMContext):
         await message.reply("Введите цену ")
 
 
-#четвертый ответ
+# четвертый ответ
 # @dp.message_handler(state=FSMAdmin.price)
 async def load_price(message: types.Message, state=FSMContext):
     if message.from_user.id == ID:
@@ -101,28 +111,19 @@ async def del_callback_run(callback_query: types.CallbackQuery):
 # @dp.message_handler(commands="Удалить")
 async def delete_item(message: types.Message):
     if message.from_user.id == ID:
-        read = await sqlite_db.sql_read2()
+        read = await sqlite_db.sql_category()
         for ret in read:
             await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена{ret[-2]}')
             await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup().add(
                 InlineKeyboardButton(f'Удалить {ret[1]}', callback_data=f'del {ret[1]}')))
 
 
-# Выход из состояний
-# @dp.message_handler(state="*", commands="Отмена")
-# @dp.message_handler(Text(equals="Отмена", ignore_case=True), state="*")
-async def cancel_handler(message: types.Message, state: FSMContext):
-    current_state = await state.get_state()
-    if current_state == None:
-        return
-    await state.finish()
-    await message.reply("Ок")
-
 @dp.message_handler(text='Готовый заказ')
 async def order_start(message: types.Message):
     if message.from_user.id == ID:
         await FSMOrder.number_order.set()
         await message.reply('Введите номер выполненного заказа')
+
 
 @dp.message_handler(content_types=['number_order'], state=FSMOrder.number_order)
 async def done_order(message: types.Message, state=FSMContext):
@@ -133,19 +134,15 @@ async def done_order(message: types.Message, state=FSMContext):
         await state.finish()
 
 
-
-
-
 def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(cm_start, commands=['Загрузить'], state=None)
+    dp.register_message_handler(cancel_handler, state="*", commands="Отмена")
+    dp.register_message_handler(cancel_handler, Text(equals="Отмена", ignore_case=True), state="*")
     dp.register_message_handler(load_photo, content_types=['photo'], state=FSMAdmin.photo)
     dp.register_message_handler(load_name, state=FSMAdmin.name)
     dp.register_message_handler(load_description, state=FSMAdmin.description)
     dp.register_message_handler(load_price, state=FSMAdmin.price)
     dp.register_message_handler(load_category, state=FSMAdmin.category)
-    dp.register_message_handler(cancel_handler, state="*", commands="Отмена")
-    dp.register_message_handler(cancel_handler, Text(equals="Отмена", ignore_case=True), state="*")
     dp.register_message_handler(make_changes_command, commands=['admin'], is_chat_admin=True)
     dp.register_message_handler(delete_item, commands=['Удалить'])
     dp.register_message_handler(done_order, state=FSMOrder.number_order)
-
