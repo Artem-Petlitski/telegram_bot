@@ -1,6 +1,7 @@
 import sqlite3 as sq
-from create_bot import bot
+from create_bot import bot, YOOTOKEN
 from aiogram.types.labeled_price import LabeledPrice
+
 
 
 async def sql_start():
@@ -60,7 +61,7 @@ async def check(user_id: int) -> None:
     ''', (user_id,))
     price = cur.fetchone()
     price = price[0] if price else False
-    YOOTOKEN = '381764678:TEST:32487'
+
     if price:
         await bot.send_invoice(chat_id=user_id, title="Оплата заказа",
                                description='Пиццерия', payload="Monthsub", provider_token=YOOTOKEN,

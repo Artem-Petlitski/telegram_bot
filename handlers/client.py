@@ -10,7 +10,7 @@ from aiogram.types import *
 from database import set_data, check, del_cart, set_order, history_order
 from aiogram.utils.markdown import hlink
 
-YOOTOKEN = '381764678:TEST:32487'
+# YOOTOKEN = '381764678:TEST:32487'
 
 
 class FSMAdress(StatesGroup):

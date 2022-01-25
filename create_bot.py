@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import os
 load_dotenv('.env')
 TOKEN = os.getenv("BOT_TOKEN")
+YOOTOKEN = os.getenv("YOOMONEY")
+
 storage = MemoryStorage()
 
 # bot_token = getenv("BOT_TOKEN")
