@@ -7,7 +7,7 @@ from keyboards import kb_client, kb_place
 from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
 from database import sqlite_db
 from aiogram.types import *
-from database import set_data, check, del_cart, set_order
+from database import set_data, check, del_cart, set_order, history_order
 from aiogram.utils.markdown import hlink
 
 YOOTOKEN = '381764678:TEST:32487'
@@ -18,10 +18,9 @@ class FSMAdress(StatesGroup):
 
 
 # @dp.message_handler(commands=['start'])
-
 async def command_start(message: types.Message):
     try:
-        await bot.send_message(message.from_user.id, 'Режимы работы', reply_markup=kb_client)
+        await bot.send_message(message.from_user.id, 'Меню команд', reply_markup=kb_client)
         await message.delete()
     except:
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
@@ -63,14 +62,6 @@ async def location(message: types.Message):
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 
-@dp.message_handler(text="Доставка")
-async def dostavka(message: types.Message):
-    try:
-        await bot.send_message(message.from_user.id, "Пицца будет доставлена через ~~  25 минут", request_location=True,
-                               reply_markup=ReplyKeyboardRemove())
-        await message.delete()
-    except:
-        await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 
 @dp.message_handler(text="Поддержка")
@@ -88,14 +79,6 @@ async def help(message: types.Message):
         await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 
-@dp.message_handler(text="В пиццерии")
-async def v_piccerii(message: types.Message):
-    try:
-        await bot.send_message(message.from_user.id, "При получении пиццы предъявите ваш чек",
-                               reply_markup=ReplyKeyboardRemove())
-        await message.delete()
-    except:
-        await message.reply("Общение с ботом через ЛС, напишите ему! \nhttps://t.me/Pizza_ShefaBot")
 
 
 async def category(message: types.Message):
@@ -118,16 +101,7 @@ async def category(message: types.Message):
                            parse_mode=ParseMode.MARKDOWN)
 
 
-@dp.message_handler(text="Пиццы")
-async def buy_item(message: types.Message):
-    read = await sqlite_db.sql_read2(message.text)
-    for ret in read:
-        await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}\nОписание:{ret[2]}\nЦена{ret[-2]}')
-        await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup().add(
-            InlineKeyboardButton(f'Добавить {ret[1]}', callback_data=f'buy {ret[1]}')))
-
-
-@dp.message_handler(text="Напитки")
+@dp.message_handler(text=["Пиццы" ,'Напитки'])
 async def buy_item(message: types.Message):
     read = await sqlite_db.sql_read2(message.text)
     for ret in read:
@@ -188,14 +162,19 @@ async def del_order(message: types.Message):
     await del_cart(message.from_user.id)
 
 
+# @dp.message_handler(text='История')
+# async def order_history(message: types.Message):
+#     await bot.send_message(message.from_user.id, "*Последние заказы*", parse_mode=ParseMode.MARKDOWN)
+#     orders = await history_order(message.from_user.id)
+#     print(orders)
+#     for order in orders:
+#         await bot.send_message(message.from_user.id,order)
 
 
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(command_start, commands=['start'])
     dp.register_message_handler(command_help, commands=['help'])
-    dp.register_message_handler(time_of_work, commands=["Режим_работы"])
-    dp.register_message_handler(location, commands=['Расположение'])
-    dp.register_message_handler(category, commands=['Меню'])
-    dp.register_message_handler(dostavka, commands=["Доставка"])
-    dp.register_message_handler(v_piccerii, commands=["В_пиццерии"])
+    dp.register_message_handler(time_of_work, text="Режим_работы")
+    dp.register_message_handler(location, text='Расположение')
+    dp.register_message_handler(category, text='Меню')
     dp.register_message_handler(adress, state=FSMAdress.adress)

@@ -40,6 +40,15 @@ async def sql_delete_command(data):
     cur.execute('DELETE FROM Menu WHERE name == ?', (data,))
     base.commit()
 
+async def history_order(user_id):
+    conn = sq.connect('pizza_cool.db')
+    print(user_id)
+    cur = conn.cursor()
+    return cur.execute('''
+            SELECT product FROM orders WHERE user_id = ? 
+        ''', (user_id,)).fetchmany(3)
+
+
 
 async def check(user_id: int) -> None:
     conn = sq.connect('pizza_cool.db')
@@ -130,7 +139,6 @@ async def sql_done_order(state):
                 WHERE id = ?
             ''', (data['number_order']))
     conn.commit()
-
 
 
 

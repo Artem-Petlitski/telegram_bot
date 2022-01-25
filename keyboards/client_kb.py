@@ -1,10 +1,9 @@
 from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 
-workmode = KeyboardButton("/Режим_работы")
-location = KeyboardButton("/Расположение")
-menu = KeyboardButton("/Меню")
+workmode = KeyboardButton("Режим_работы")
+location = KeyboardButton("Расположение")
+menu = KeyboardButton("Меню")
 order = KeyboardButton("Оплатить")
-# b4 = KeyboardButton("/Пополнение счета")
 in_pizzeria = KeyboardButton("/В_пиццерии")
 dostavka = KeyboardButton("/Доставка")
 back_order = KeyboardButton("Удалить заказ")
